@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Precio de Venta</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <!-- TableExport.css for exporting table to Excel -->
+    <link rel="stylesheet" href="https://unpkg.com/tableexport@5.2.0/dist/css/tableexport.min.css"/>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+        .container {
+            max-width: 500px;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .result {
+            display: none;
+            margin-top: 20px;
+        }
+        .table-container {
+            width: 100%;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container text-center animate__animated animate__fadeIn">
+        <h1 class="mb-4">Calculadora de Precio de Venta</h1>
+        <form id="priceForm">
+            <div class="mb-3">
+                <label for="concept" class="form-label">Concepto</label>
+                <input type="text" class="form-control" id="concept" required>
+            </div>
+            <div class="mb-3">
+                <label for="cost" class="form-label">Costo Base ($)</label>
+                <input type="number" class="form-control" id="cost" required>
+            </div>
+            <div class="mb-3">
+                <label for="profit" class="form-label">Porcentaje de Ganancia (%)</label>
+                <input type="number" class="form-control" id="profit" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Calcular</button>
+        </form>
+        <div class="result animate__animated animate__fadeInUp">
+            <h2>Precio de Venta: <span id="salePrice"></span> $</h2>
+            <h3>Margen de Ganancia: <span id="profitMargin"></span> $</h3>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="resultsTable" class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Concepto</th>
+                    <th>Costo Base ($)</th>
+                    <th>Margen de Ganancia ($)</th>
+                    <th>Precio Sugerido ($)</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <button id="exportPdf" class="btn btn-danger">Exportar a PDF</button>
+        <button id="exportExcel" class="btn btn-success">Exportar a Excel</button>
+        <button id="clearTable" class="btn btn-warning">Limpiar Tabla</button>
+    </div>
+
+    <!-- Bootstrap 5 JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0/js/bootstrap.min.js"></script>
+    <!-- jsPDF for exporting to PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.4/jspdf.plugin.autotable.min.js"></script>
+    <!-- TableExport.js for exporting to Excel -->
+    <script src="https://unpkg.com/tableexport@5.2.0/dist/js/tableexport.min.js"></script>
+    <script>
+        document.getElementById('priceForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const concept = document.getElementById('concept').value;
+            const cost = parseFloat(document.getElementById('cost').value);
+            const profitPercentage = parseFloat(document.getElementById('profit').value);
+            
+            if (isNaN(cost) || isNaN(profitPercentage) || !concept) {
+                alert('Por favor, ingrese valores válidos.');
+                return;
+            }
+            
+            const profitMargin = (cost * profitPercentage) / 100;
+            const salePrice = cost + profitMargin;
+            
+            document.getElementById('salePrice').innerText = salePrice.toFixed(2);
+            document.getElementById('profitMargin').innerText = profitMargin.toFixed(2);
+            
+            document.querySelector('.result').style.display = 'block';
+            
+            // Agregar los valores a la tabla
+            const tableBody = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+            const newRow = tableBody.insertRow();
+            newRow.insertCell(0).innerText = concept;
+            newRow.insertCell(1).innerText = cost.toFixed(2);
+            newRow.insertCell(2).innerText = profitMargin.toFixed(2);
+            newRow.insertCell(3).innerText = salePrice.toFixed(2);
+        });
+
+        document.getElementById('exportPdf').addEventListener('click', function() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.autoTable({ html: '#resultsTable' });
+            doc.save('tabla_productos.pdf');
+        });
+
+        document.getElementById('exportExcel').addEventListener('click', function() {
+            const tableExport = new TableExport(document.getElementById('resultsTable'), {
+                exportButtons: false,
+                filename: 'tabla_productos',
+                sheetname: 'Productos'
+            });
+            const exportData = tableExport.getExportData();
+            const preferences = exportData.resultsTable.xlsx;
+            tableExport.export2file(preferences.data, preferences.mimeType, preferences.filename, preferences.fileExtension, preferences.merges, preferences.RTL, preferences.sheetname);
+        });
+
+        document.getElementById('clearTable').addEventListener('click', function() {
+            const tableBody = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+        });
+    </script>
+</body>
+</html>
